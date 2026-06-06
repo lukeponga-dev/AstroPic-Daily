@@ -13,48 +13,48 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme =
   darkColorScheme(
-      primary = CoolTealDark,
-      secondary = StarAmberDark,
-      tertiary = NebulaRoseDark,
+      primary = AccentPrimaryDark,
+      secondary = AccentSecondaryDark,
+      tertiary = AccentTertiaryDark,
       background = DarkBackground,
       surface = DarkSurface,
-      onPrimary = Color(0xFF090414),
-      onSecondary = Color(0xFF090414),
-      onTertiary = Color(0xFF090414),
-      onBackground = Color(0xFFFAF5FF),
-      onSurface = Color(0xFFFAF5FF),
+      onPrimary = Color.Black,
+      onSecondary = Color.Black,
+      onTertiary = Color.White,
+      onBackground = Color.White,
+      onSurface = Color.White,
       surfaceVariant = BorderMutedDark,
       onSurfaceVariant = TextMutedDark,
       error = ErrorColor,
       onError = Color.White,
-      errorContainer = Color(0xFF881337),
-      onErrorContainer = Color(0xFFFFD1D9)
+      errorContainer = Color(0xFF450A0A),
+      onErrorContainer = Color(0xFFFECACA)
   )
 
 private val LightColorScheme =
   lightColorScheme(
-      primary = CoolTealLight,
-      secondary = StarAmberLight,
-      tertiary = NebulaRoseLight,
+      primary = AccentPrimaryLight,
+      secondary = AccentSecondaryLight,
+      tertiary = AccentTertiaryLight,
       background = LightBackground,
       surface = LightSurface,
       onPrimary = Color.White,
       onSecondary = Color.White,
-      onTertiary = Color.White,
-      onBackground = Color(0xFF1E1045),
-      onSurface = Color(0xFF1E1045),
+      onTertiary = Color.Black,
+      onBackground = Color.Black,
+      onSurface = Color.Black,
       surfaceVariant = BorderMutedLight,
       onSurfaceVariant = TextMutedLight,
       error = ErrorColor,
       onError = Color.White,
-      errorContainer = Color(0xFFFFE4E6),
-      onErrorContainer = Color(0xFF9F1239)
+      errorContainer = Color(0xFFFEF2F2),
+      onErrorContainer = Color(0xFF991B1B)
   )
 
 @Composable
 fun NasaDailyTheme(
-  darkTheme: Boolean = isSystemInDarkTheme(), // Follow system theme setting for modern responsiveness
-  dynamicColor: Boolean = false, // We'll keep our hand-crafted clean layout, but users can toggle
+  darkTheme: Boolean = isSystemInDarkTheme(),
+  dynamicColor: Boolean = true, // Enable by default for modern Android experience
   content: @Composable () -> Unit,
 ) {
   val colorScheme =

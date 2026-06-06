@@ -2,12 +2,12 @@
 
 **Stardate Revision: 2026.06.03**
 
-Welcome to the **Celestial Observatory** (NASA Daily application, `com.aistudio.nasadaily.jklmn`). Your privacy across the cosmos is of paramount importance to us. This Privacy Policy documents the secure protocols, data preservation principles, and localized telemetry pipelines implemented within this application.
+Welcome to the **Astropic Daily** (application, `com.aistudio.nasadaily.jklmn`). Your privacy across the cosmos is of paramount importance to us. This Privacy Policy documents the secure protocols, data preservation principles, and localized telemetry pipelines implemented within this application.
 
 ---
 
 ## 1. Local-Telemetry First (No Remote Tracking)
-The Celestial Observatory operates on a strict **local-first** paradigm. We do not integrate, compile, package, or transmit your individual usage metrics, app navigation loops, hardware identifiers, or screen telemetries to third-party advertising brokers or external analysis servers. 
+The Astropic Daily operates on a strict **local-first** paradigm. We do not integrate, compile, package, or transmit your individual usage metrics, app navigation loops, hardware identifiers, or screen telemetries to third-party advertising brokers or external analysis servers. 
 
 ## 2. API Coupling & External Integrations
 Our application fetches real-time astronomy visual logs and astronomical data using public, open-source APIs provided directly by the **National Aeronautics and Space Administration (NASA)**. 

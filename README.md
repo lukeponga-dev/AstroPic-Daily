@@ -1,6 +1,6 @@
-# 🌌 Celestial Observatory (NASA Daily)
+# 🌌 Astropic Daily
 
-Welcome to the **Celestial Observatory**, a highly styled, modern Jetpack Compose application that acts as your telemetry hub for NASA's Astronomy Picture of the Day (APOD) APIs. Journey through active cosmic archives, track historic stardates, and customize your deep-space observatory experience.
+Welcome to **Astropic Daily**, a highly styled, modern Jetpack Compose application that acts as your telemetry hub for NASA's Astronomy Picture of the Day (APOD) APIs. Journey through active cosmic archives, track historic stardates, and customize your deep-space observatory experience.
 
 ---
 

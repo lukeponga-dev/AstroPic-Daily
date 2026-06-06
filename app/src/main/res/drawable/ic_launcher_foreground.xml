@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/nasa_logo_icon_1780429738545"
+        android:drawable="@drawable/cosmic_lens_icon_1780457317879"
         android:gravity="center" />
 </layer-list>
