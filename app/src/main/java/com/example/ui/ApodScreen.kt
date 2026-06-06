@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -59,12 +60,12 @@ fun ApodScreen(viewModel: ApodViewModel) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
-    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Scaffold(
-        modifier = Modifier.testTag("main_scaffold"),
-        topBar = {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag("main_container")) {
+        val isWideScreen = maxWidth >= 600.dp
+
+        val topBarContent: @Composable () -> Unit = {
             LargeTopAppBar(
                 title = {
                     Column {
@@ -97,61 +98,112 @@ fun ApodScreen(viewModel: ApodViewModel) {
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp,
-                modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)).clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            ) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(if (selectedTab == 0) Icons.Default.Explore else Icons.Default.Explore, null) },
-                    label = { Text("Explore") },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(if (selectedTab == 1) Icons.Default.AutoAwesomeMotion else Icons.Default.AutoAwesomeMotion, null) },
-                    label = { Text("Feed") },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(if (selectedTab == 2) Icons.Default.Bookmarks else Icons.Default.Bookmarks, null) },
-                    label = { Text("Vault") },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer)
-                )
-            }
         }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            when (val state = uiState) {
-                is ApodUiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
-                }
-                is ApodUiState.Success -> {
-                    AnimatedContent(targetState = selectedTab, label = "TabTransition") { tab ->
-                        when (tab) {
-                            0 -> ObservatoryTab(state, isFetchingCustomDate, customDateError, viewModel)
-                            1 -> FeedTab(state, showGrid, viewModel)
-                            2 -> VaultTab(favorites, viewModel)
+
+        val contentBody: @Composable (PaddingValues) -> Unit = { innerPadding ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                when (val state = uiState) {
+                    is ApodUiState.Loading -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(strokeWidth = 2.dp)
                         }
                     }
+                    is ApodUiState.Success -> {
+                        AnimatedContent(targetState = selectedTab, label = "TabTransition") { tab ->
+                            when (tab) {
+                                0 -> ObservatoryTab(state, isFetchingCustomDate, customDateError, viewModel, isWideScreen)
+                                1 -> FeedTab(state, showGrid, viewModel, isWideScreen)
+                                2 -> VaultTab(favorites, viewModel, isWideScreen)
+                            }
+                        }
+                    }
+                    is ApodUiState.Error -> {
+                        ErrorView(state.message) { viewModel.refreshToday() }
+                    }
                 }
-                is ApodUiState.Error -> {
-                    ErrorView(state.message) { viewModel.refreshToday() }
+            }
+        }
+
+        if (isWideScreen) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                NavigationRail(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxHeight(),
+                    header = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 16.dp)) {
+                            Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                ) {
+                    Spacer(Modifier.height(32.dp))
+                    NavigationRailItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Explore, null) },
+                        label = { Text("Explore") }
+                    )
+                    NavigationRailItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
+                        label = { Text("Feed") }
+                    )
+                    NavigationRailItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Default.Bookmarks, null) },
+                        label = { Text("Vault") }
+                    )
                 }
+
+                Scaffold(
+                    topBar = topBarContent,
+                    modifier = Modifier.weight(1f)
+                ) { innerPadding ->
+                    contentBody(innerPadding)
+                }
+            }
+        } else {
+            Scaffold(
+                topBar = topBarContent,
+                bottomBar = {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    ) {
+                        NavigationBarItem(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            icon = { Icon(Icons.Default.Explore, null) },
+                            label = { Text("Explore") },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
+                            label = { Text("Feed") },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
+                            icon = { Icon(Icons.Default.Bookmarks, null) },
+                            label = { Text("Vault") },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer)
+                        )
+                    }
+                }
+            ) { innerPadding ->
+                contentBody(innerPadding)
             }
         }
 
@@ -174,13 +226,16 @@ fun ObservatoryTab(
     state: ApodUiState.Success,
     isFetching: Boolean,
     error: String?,
-    viewModel: ApodViewModel
+    viewModel: ApodViewModel,
+    isWideScreen: Boolean
 ) {
+    val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = horizontalPadding, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         error?.let {
@@ -204,7 +259,7 @@ fun ObservatoryTab(
         }
 
         state.featuredApod?.let { apod ->
-            FeaturedApodSection(apod, isFetching, viewModel)
+            FeaturedApodSection(apod, isFetching, viewModel, isWideScreen)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -215,156 +270,192 @@ fun ObservatoryTab(
 fun FeaturedApodSection(
     apod: ApodEntity,
     isFetching: Boolean,
-    viewModel: ApodViewModel
+    viewModel: ApodViewModel,
+    isWideScreen: Boolean
 ) {
     val context = LocalContext.current
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.1f)
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(apod.url)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = apod.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                loading = {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    }
-                }
-            )
-
-            if (isFetching) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                }
-            }
-
-            // Top overlay tags
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    shape = CircleShape,
-                ) {
-                    Text(
-                        apod.date,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
-                    )
-                }
-                
-                IconButton(
-                    onClick = { viewModel.toggleFavorite(apod) },
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (apod.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (apod.isFavorite) Color.Red else Color.White
-                    )
-                }
-            }
-            
-            // Interaction arrows
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(
-                    onClick = { viewModel.selectAdjacentDate(-1) },
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.2f), CircleShape)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
-                }
-                IconButton(
-                    onClick = { viewModel.selectAdjacentDate(1) },
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.2f), CircleShape)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White)
-                }
-            }
-        }
-
-        Text(
-            text = apod.title,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
+    if (isWideScreen) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            OutlinedButton(
-                onClick = {
-                    val sendIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "Observation: ${apod.title}\n\n${apod.url}")
-                        type = "text/plain"
-                    }
-                    context.startActivity(Intent.createChooser(sendIntent, null))
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp)
+            Box(
+                modifier = Modifier
+                    .weight(1.2f)
+                    .aspectRatio(1f) // Ensure image is well proportioned and large
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Share")
+                ApodImageWithOverlays(apod, isFetching, viewModel)
             }
-
-            Button(
-                onClick = {
-                    DownloadUtils.downloadImage(context, apod.hdurl ?: apod.url, "APOD_${apod.date}.jpg")
-                },
+            
+            Column(
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp)
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Acquire")
+                ApodDetailsAndActions(apod, context)
             }
         }
-
-        Text(
-            text = apod.explanation,
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.1f)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                ApodImageWithOverlays(apod, isFetching, viewModel)
+            }
+            ApodDetailsAndActions(apod, context)
+        }
     }
+}
+
+@Composable
+private fun ApodImageWithOverlays(apod: ApodEntity, isFetching: Boolean, viewModel: ApodViewModel) {
+    SubcomposeAsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(apod.url)
+            .crossfade(true)
+            .build(),
+        contentDescription = apod.title,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop,
+        loading = {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+        }
+    )
+
+    if (isFetching) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White)
+        }
+    }
+
+    // Top overlay tags
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            color = Color.Black.copy(alpha = 0.5f),
+            shape = CircleShape,
+        ) {
+            Text(
+                apod.date,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White
+            )
+        }
+        
+        IconButton(
+            onClick = { viewModel.toggleFavorite(apod) },
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), CircleShape)
+        ) {
+            Icon(
+                imageVector = if (apod.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Favorite",
+                tint = if (apod.isFavorite) Color.Red else Color.White
+            )
+        }
+    }
+    
+    // Interaction arrows
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(
+            onClick = { viewModel.selectAdjacentDate(-1) },
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.2f), CircleShape)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+        }
+        IconButton(
+            onClick = { viewModel.selectAdjacentDate(1) },
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.2f), CircleShape)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun ApodDetailsAndActions(apod: ApodEntity, context: android.content.Context) {
+    Text(
+        text = apod.title,
+        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedButton(
+            onClick = {
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, "Observation: ${apod.title}\n\n${apod.url}")
+                    type = "text/plain"
+                }
+                context.startActivity(Intent.createChooser(sendIntent, null))
+            },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Share")
+        }
+
+        Button(
+            onClick = {
+                DownloadUtils.downloadImage(context, apod.hdurl ?: apod.url, "APOD_${apod.date}.jpg")
+            },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Acquire")
+        }
+    }
+
+    Text(
+        text = apod.explanation,
+        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
 fun FeedTab(
     state: ApodUiState.Success,
     showGrid: Boolean,
-    viewModel: ApodViewModel
+    viewModel: ApodViewModel,
+    isWideScreen: Boolean
 ) {
     val items = state.apods
+    val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
     
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -381,7 +472,7 @@ fun FeedTab(
 
         if (showGrid) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Adaptive(minSize = 160.dp),
                 contentPadding = PaddingValues(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -392,9 +483,11 @@ fun FeedTab(
                 }
             }
         } else {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 350.dp),
                 contentPadding = PaddingValues(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(items, key = { it.date }) { apod ->
@@ -412,8 +505,11 @@ fun FeedTab(
 @Composable
 fun VaultTab(
     favorites: List<ApodEntity>,
-    viewModel: ApodViewModel
+    viewModel: ApodViewModel,
+    isWideScreen: Boolean
 ) {
+    val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
+
     if (favorites.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -423,12 +519,14 @@ fun VaultTab(
             }
         }
     } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 350.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding),
             contentPadding = PaddingValues(top = 16.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     "Secure Vault",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
