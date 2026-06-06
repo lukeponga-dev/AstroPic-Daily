@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/cosmic_lens_icon_1780457317879"
+        android:drawable="@drawable/astropic_app_icon_1780741612441"
         android:gravity="center" />
 </layer-list>
