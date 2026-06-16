@@ -54,7 +54,7 @@ private val LightColorScheme =
 @Composable
 fun NasaDailyTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
-  dynamicColor: Boolean = true, // Enable by default for modern Android experience
+  dynamicColor: Boolean = false, // Disable dynamic colors to showcase cosmic theme
   content: @Composable () -> Unit,
 ) {
   val colorScheme =
