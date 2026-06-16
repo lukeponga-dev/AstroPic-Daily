@@ -129,6 +129,19 @@ class ApodViewModel(private val repository: ApodRepository) : ViewModel() {
         }
     }
 
+    fun fetchRandomApod() {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        try {
+            val minDate = sdf.parse("1995-06-16")?.time ?: return
+            val maxDate = java.util.Date().time
+            val randomTime = minDate + (Math.random() * (maxDate - minDate)).toLong()
+            val randomDateStr = sdf.format(java.util.Date(randomTime))
+            selectDate(randomDateStr)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun selectDate(date: String) {
         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
         try {

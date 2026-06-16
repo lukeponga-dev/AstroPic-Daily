@@ -84,13 +84,22 @@ fun ApodScreen(viewModel: ApodViewModel) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { 
+                        viewModel.fetchRandomApod() 
+                        selectedTab = 0
+                    }, modifier = Modifier.testTag("random_button")) {
+                        Icon(Icons.Default.Shuffle, contentDescription = "Random Date")
+                    }
                     IconButton(onClick = { showDatePicker = true }, modifier = Modifier.testTag("date_button")) {
                         Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
                     }
                     IconButton(onClick = { showPrivacyPolicy = true }, modifier = Modifier.testTag("privacy_button")) {
                         Icon(Icons.Default.Shield, contentDescription = "Privacy")
                     }
-                    IconButton(onClick = { viewModel.refreshToday(forceFetch = true) }, modifier = Modifier.testTag("refresh_button")) {
+                    IconButton(onClick = { 
+                        viewModel.refreshToday(forceFetch = true) 
+                        selectedTab = 0
+                    }, modifier = Modifier.testTag("refresh_button")) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },
@@ -111,9 +120,7 @@ fun ApodScreen(viewModel: ApodViewModel) {
             ) {
                 when (val state = uiState) {
                     is ApodUiState.Loading -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(strokeWidth = 2.dp)
-                        }
+                        SkeletonLoadingScreen(isWideScreen = isWideScreen)
                     }
                     is ApodUiState.Success -> {
                         AnimatedContent(targetState = selectedTab, label = "TabTransition") { tab ->
@@ -147,19 +154,19 @@ fun ApodScreen(viewModel: ApodViewModel) {
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
                         icon = { Icon(Icons.Default.Explore, null) },
-                        label = { Text("Explore") }
+                        label = { Text("Today") }
                     )
                     NavigationRailItem(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
                         icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
-                        label = { Text("Feed") }
+                        label = { Text("Archive") }
                     )
                     NavigationRailItem(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
                         icon = { Icon(Icons.Default.Bookmarks, null) },
-                        label = { Text("Vault") }
+                        label = { Text("Favorites") }
                     )
                 }
 
@@ -185,21 +192,21 @@ fun ApodScreen(viewModel: ApodViewModel) {
                             selected = selectedTab == 0,
                             onClick = { selectedTab = 0 },
                             icon = { Icon(Icons.Default.Explore, null) },
-                            label = { Text("Explore") },
+                            label = { Text("Today") },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
                         )
                         NavigationBarItem(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
                             icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
-                            label = { Text("Feed") },
+                            label = { Text("Archive") },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
                         NavigationBarItem(
                             selected = selectedTab == 2,
                             onClick = { selectedTab = 2 },
                             icon = { Icon(Icons.Default.Bookmarks, null) },
-                            label = { Text("Vault") },
+                            label = { Text("Favorites") },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer)
                         )
                     }
@@ -211,7 +218,10 @@ fun ApodScreen(viewModel: ApodViewModel) {
 
         if (showDatePicker) {
             SimpleDatePickerDialog(
-                onDateSelected = { viewModel.selectDate(it) },
+                onDateSelected = { 
+                    viewModel.selectDate(it) 
+                    selectedTab = 0
+                },
                 onDismiss = { showDatePicker = false }
             )
         }
@@ -233,38 +243,44 @@ fun ObservatoryTab(
 ) {
     val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = horizontalPadding, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
-        error?.let {
-            Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .widthIn(max = 1100.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = horizontalPadding, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            error?.let {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.width(12.dp))
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearCustomDateError() }) {
-                        Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error)
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.width(12.dp))
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { viewModel.clearCustomDateError() }) {
+                            Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
-        }
 
-        state.featuredApod?.let { apod ->
-            FeaturedApodSection(apod, isFetching, viewModel, isWideScreen)
-        }
+            state.featuredApod?.let { apod ->
+                FeaturedApodSection(apod, isFetching, viewModel, isWideScreen)
+            }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
+        }
     }
 }
 
@@ -326,9 +342,12 @@ private fun ApodImageWithOverlays(apod: ApodEntity, isFetching: Boolean, viewMod
         modifier = Modifier.fillMaxSize(),
         contentScale = ContentScale.Crop,
         loading = {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pulseAnimation()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
         }
     )
 
@@ -466,43 +485,53 @@ fun FeedTab(
     val items = state.apods
     val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
     
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 1100.dp)
+                .fillMaxWidth()
+                .padding(horizontal = horizontalPadding)
         ) {
-            Text(
-                "Archives",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
-            IconButton(onClick = { viewModel.toggleGrid() }) {
-                Icon(if (showGrid) Icons.Default.ViewList else Icons.Default.GridView, null)
-            }
-        }
-
-        if (showGrid) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = PaddingValues(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(items, key = { it.date }) { apod ->
-                    GridApodCard(apod) { viewModel.selectDate(apod.date) }
+                Text(
+                    "Archives",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+                IconButton(onClick = { viewModel.toggleGrid() }) {
+                    Icon(if (showGrid) Icons.Default.ViewList else Icons.Default.GridView, null)
                 }
             }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 350.dp),
-                contentPadding = PaddingValues(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(items, key = { it.date }) { apod ->
-                    ListApodCard(apod) { viewModel.selectDate(apod.date) }
+
+            if (showGrid) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(items, key = { it.date }) { apod ->
+                        GridApodCard(apod) { viewModel.selectDate(apod.date) }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 350.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(items, key = { it.date }) { apod ->
+                        ListApodCard(apod) { viewModel.selectDate(apod.date) }
+                    }
                 }
             }
         }
@@ -530,22 +559,30 @@ fun VaultTab(
             }
         }
     } else {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 350.dp),
-            modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    "Secure Vault",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            items(favorites, key = { "fav_${it.date}" }) { apod ->
-                ListApodCard(apod) { viewModel.selectDate(apod.date) }
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 350.dp),
+                modifier = Modifier
+                    .widthIn(max = 1100.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        "Secure Vault",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                items(favorites, key = { "fav_${it.date}" }) { apod ->
+                    ListApodCard(apod) { viewModel.selectDate(apod.date) }
+                }
             }
         }
     }
@@ -569,7 +606,15 @@ fun GridApodCard(apod: ApodEntity, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(24.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .pulseAnimation()
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                }
             )
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
@@ -611,7 +656,15 @@ fun ListApodCard(apod: ApodEntity, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .pulseAnimation()
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                }
             )
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
