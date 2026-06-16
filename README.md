@@ -38,7 +38,7 @@ Our interface employs a **Cosmic Hyperwave / Retro-Future Dark** design built on
 ### Package & Versioning Properties
 - **Application ID**: `com.aistudio.nasadaily.jklmn`
 - **Target SDK**: 36 | **Minimum SDK**: 24
-- **Version Code**: 11 | **Version Name**: 11.0
+- **Version Code**: 12 | **Version Name**: 12.0
 
 ### Run & Build Gradle Commands
 Use standard Gradle commands to compile and build the package:
