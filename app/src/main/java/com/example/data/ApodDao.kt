@@ -14,9 +14,6 @@ interface ApodDao {
     @Query("SELECT * FROM apod_table WHERE isFavorite = 1 ORDER BY date DESC")
     fun getFavorites(): Flow<List<ApodEntity>>
 
-    @Query("SELECT * FROM apod_table WHERE title LIKE '%' || :query || '%' OR explanation LIKE '%' || :query || '%' OR date LIKE '%' || :query || '%' ORDER BY date DESC")
-    fun searchApods(query: String): Flow<List<ApodEntity>>
-
     @Query("UPDATE apod_table SET isFavorite = :isFavorite WHERE date = :date")
     suspend fun updateFavorite(date: String, isFavorite: Boolean)
 

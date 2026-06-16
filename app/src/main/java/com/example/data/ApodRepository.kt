@@ -42,10 +42,6 @@ class ApodRepository(
         apodDao.updateFavorite(date, isFavorite)
     }
 
-    fun searchApods(query: String): Flow<List<ApodEntity>> {
-        return apodDao.searchApods(query)
-    }
-
     fun getTodayString(): String {
         return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
