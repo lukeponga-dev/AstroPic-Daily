@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.ApodEntity
 import com.example.data.ApodRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -35,6 +36,20 @@ class ApodViewModel(private val repository: ApodRepository) : ViewModel() {
 
     private val _customDateError = MutableStateFlow<String?>(null)
     val customDateError: StateFlow<String?> = _customDateError.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchResults: StateFlow<List<ApodEntity>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isBlank()) {
+                flowOf(emptyList())
+            } else {
+                repository.searchApods(query)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         observeApods()
@@ -164,6 +179,24 @@ class ApodViewModel(private val repository: ApodRepository) : ViewModel() {
 
     fun clearCustomDateError() {
         _customDateError.value = null
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun performSearchAction() {
+        val query = _searchQuery.value.trim()
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        try {
+            val parsedDate = sdf.parse(query)
+            if (parsedDate != null && query.length == 10) {
+                // If the user typed a valid date format, fetch and display it
+                selectDate(query)
+            }
+        } catch (e: Exception) {
+            // Ignore if it's not a valid date
+        }
     }
 
     fun refreshToday(forceFetch: Boolean = false) {

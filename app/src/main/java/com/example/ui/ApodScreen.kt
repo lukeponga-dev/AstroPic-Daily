@@ -36,6 +36,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
@@ -56,6 +59,8 @@ fun ApodScreen(viewModel: ApodViewModel) {
     val customDateError by viewModel.customDateError.collectAsStateWithLifecycle()
     val showGrid by viewModel.showGrid.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showPrivacyPolicy by remember { mutableStateOf(false) }
@@ -117,8 +122,9 @@ fun ApodScreen(viewModel: ApodViewModel) {
                         AnimatedContent(targetState = selectedTab, label = "TabTransition") { tab ->
                             when (tab) {
                                 0 -> ObservatoryTab(state, isFetchingCustomDate, customDateError, viewModel, isWideScreen)
-                                1 -> FeedTab(state, showGrid, viewModel, isWideScreen)
-                                2 -> VaultTab(favorites, viewModel, isWideScreen)
+                                1 -> SearchTab(searchQuery, searchResults, viewModel, isWideScreen) { selectedTab = it }
+                                2 -> FeedTab(state, showGrid, viewModel, isWideScreen)
+                                3 -> VaultTab(favorites, viewModel, isWideScreen)
                             }
                         }
                     }
@@ -150,12 +156,18 @@ fun ApodScreen(viewModel: ApodViewModel) {
                     NavigationRailItem(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
-                        label = { Text("Feed") }
+                        icon = { Icon(Icons.Default.Search, null) },
+                        label = { Text("Search") }
                     )
                     NavigationRailItem(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
+                        label = { Text("Feed") }
+                    )
+                    NavigationRailItem(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
                         icon = { Icon(Icons.Default.Bookmarks, null) },
                         label = { Text("Vault") }
                     )
@@ -189,13 +201,20 @@ fun ApodScreen(viewModel: ApodViewModel) {
                         NavigationBarItem(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
+                            icon = { Icon(Icons.Default.Search, null) },
+                            label = { Text("Search") },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
                             icon = { Icon(Icons.Default.AutoAwesomeMotion, null) },
                             label = { Text("Feed") },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
                         NavigationBarItem(
-                            selected = selectedTab == 2,
-                            onClick = { selectedTab = 2 },
+                            selected = selectedTab == 3,
+                            onClick = { selectedTab = 3 },
                             icon = { Icon(Icons.Default.Bookmarks, null) },
                             label = { Text("Vault") },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer)
@@ -403,6 +422,15 @@ private fun ApodDetailsAndActions(apod: ApodEntity, context: android.content.Con
         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
         color = MaterialTheme.colorScheme.onSurface
     )
+
+    if (!apod.copyright.isNullOrBlank()) {
+        Text(
+            text = "© ${apod.copyright.replace("\n", " ").trim()}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -667,5 +695,80 @@ fun SimpleDatePickerDialog(
         }
     ) {
         DatePicker(state = datePickerState)
+    }
+}
+
+@Composable
+fun SearchTab(
+    searchQuery: String,
+    searchResults: List<ApodEntity>,
+    viewModel: ApodViewModel,
+    isWideScreen: Boolean,
+    onTabSwitch: (Int) -> Unit
+) {
+    val horizontalPadding = if (isWideScreen) 32.dp else 20.dp
+    
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { viewModel.updateSearchQuery(it) },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            placeholder = { Text("Search by keywords or date (yyyy-mm-dd)") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                    }
+                }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                viewModel.performSearchAction()
+                val query = searchQuery.trim()
+                if (query.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
+                    onTabSwitch(0)
+                }
+            }),
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp)
+        )
+
+        if (searchQuery.isBlank()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "Enter a keyword or a full date like 2023-10-15 to search local archives.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.outline,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(32.dp)
+                )
+            }
+        } else if (searchResults.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "No matching archives found locally. Try fetching a specific date via the top right icon.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.outline,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(32.dp)
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 350.dp),
+                contentPadding = PaddingValues(bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(searchResults, key = { "search_${it.date}" }) { apod ->
+                    ListApodCard(apod) {
+                        viewModel.selectDate(apod.date)
+                        onTabSwitch(0)
+                    }
+                }
+            }
+        }
     }
 }

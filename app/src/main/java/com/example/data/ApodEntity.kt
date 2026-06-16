@@ -11,6 +11,7 @@ data class ApodEntity(
     val url: String,
     val hdurl: String?,
     val mediaType: String,
+    val copyright: String? = null,
     val isFavorite: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 )

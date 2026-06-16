@@ -23,7 +23,8 @@ class ApodRepository(
             explanation = response.explanation,
             url = response.url,
             hdurl = response.hdurl,
-            mediaType = response.mediaType
+            mediaType = response.mediaType,
+            copyright = response.copyright
         )
         apodDao.insertApod(entity)
         if (apodDao.getApodByDate(entity.date) == null) {
@@ -39,6 +40,10 @@ class ApodRepository(
 
     suspend fun toggleFavorite(date: String, isFavorite: Boolean) {
         apodDao.updateFavorite(date, isFavorite)
+    }
+
+    fun searchApods(query: String): Flow<List<ApodEntity>> {
+        return apodDao.searchApods(query)
     }
 
     fun getTodayString(): String {
